@@ -7,7 +7,7 @@ module ThreadSafe
   autoload :AtomicReferenceCacheBackend, 'thread_safe/atomic_reference_cache_backend'
   autoload :SynchronizedCacheBackend,    'thread_safe/synchronized_cache_backend'
 
-  ConcurrentCacheBackend =
+  ConcurrentCacheBackend = begin
     case defined?(RUBY_ENGINE) && RUBY_ENGINE
     when 'jruby'; JRubyCacheBackend
     when 'ruby';  MriCacheBackend
@@ -16,6 +16,13 @@ module ThreadSafe
       warn 'ThreadSafe: unsupported Ruby engine, using a fully synchronized ThreadSafe::Cache implementation' if $VERBOSE
       SynchronizedCacheBackend
     end
+  rescue Exception => e
+    if $VERBOSE
+      warn "ThreadSave: Failed to load native cache backend: #{e.message}. Using fully synchrionized implementation instead"
+    end
+
+    SynchronizedCacheBackend
+  end
 
   class Cache < ConcurrentCacheBackend
     KEY_ERROR = defined?(KeyError) ? KeyError : IndexError # there is no KeyError in 1.8 mode
